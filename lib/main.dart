@@ -1,7 +1,19 @@
 import 'package:ecommer_test_mode_admin/views/screens/main_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-void main() {
+import 'dart:io';
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: kIsWeb || Platform.isAndroid? FirebaseOptions(
+        apiKey: "AIzaSyCDiIDI4bIaq0FM_0SHeO2bxdY2Gr3IyEo",
+        appId: "1:467738422124:web:b49eaf9aecb41e2a5aa149",
+        messagingSenderId: "467738422124",
+        projectId: "ecommerceapp-a2c98",
+        storageBucket: "ecommerceapp-a2c98.appspot.com")
+        : null
+  );
   runApp(const MyApp());
 }
 

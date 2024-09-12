@@ -1,4 +1,6 @@
 import 'dart:typed_data'; // لاستخدام Uint8List
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -10,7 +12,11 @@ class UploadBannerScreen extends StatefulWidget {
 }
 
 class _UploadBannerScreenState extends State<UploadBannerScreen> {
-  Uint8List? _image; // تغيير نوع المتغير إلى Uint8List لتخزين بيانات الصورة
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Uint8List? _image; // لتخزين بيانات الصورة
+  String? _fileName; // لتخزين اسم الملف
+  bool _isUploading = false; // لتتبع حالة التحميل
   final ImagePicker _picker = ImagePicker();
 
   Future<void> pickImage() async {
@@ -22,10 +28,69 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
         final imageBytes = await pickedFile.readAsBytes();
         setState(() {
           _image = imageBytes;
+          _fileName = pickedFile.name; // الحصول على اسم الملف
         });
       }
     } catch (e) {
       print("Error picking file: $e");
+    }
+  }
+
+  Future<String> _uploadBannersToStorage(Uint8List image) async {
+    final ref = _storage.ref().child('Banners').child(_fileName!);
+    final uploadTask = ref.putData(image);
+    final snapshot = await uploadTask;
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }
+
+  Future<void> uploadToFireStore() async {
+    if (_image != null) {
+      setState(() {
+        _isUploading = true; // بدء التحميل
+      });
+
+      try {
+        final imageUrl = await _uploadBannersToStorage(_image!);
+        await _firestore.collection('banners').doc(_fileName).set({
+          'image': imageUrl,
+        });
+
+        // عرض رسالة النجاح
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Uploading to server'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // إعادة الصورة إلى الوضع الأصلي
+        setState(() {
+          _image = null;
+          _fileName = null;
+          _isUploading = false; // إيقاف التحميل
+        });
+      } catch (e) {
+        print("Error uploading to Firestore: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading'),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        setState(() {
+          _isUploading = false; // إيقاف التحميل
+        });
+      }
+    }
+    else{
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Empty path'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -51,6 +116,7 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
               Padding(
                 padding: const EdgeInsets.all(10.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       height: 140,
@@ -71,6 +137,12 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
                         child: Text('Banners'),
                       ),
                     ),
+                    SizedBox(height: 10),
+                    if (_fileName != null)
+                      Text(
+                        'File: $_fileName',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     SizedBox(height: 15),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -88,19 +160,29 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
                 ),
               ),
               SizedBox(width: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                ),
-                onPressed: () {
-                  // إضافة منطق الحفظ هنا إذا لزم الأمر
-                },
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: Colors.white,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                    ),
+                    onPressed: () {
+                      uploadToFireStore();
+                    },
+                    child: Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
+                  if (_isUploading) // عرض شريط التقدم عند التحميل
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
               ),
             ],
           ),
