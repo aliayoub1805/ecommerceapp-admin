@@ -1,10 +1,32 @@
-
-
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
-class UploadBannerScreen extends StatelessWidget {
-  //const DashboardScreen({super.key});
+class UploadBannerScreen extends StatefulWidget {
   static const String routeName = "\UploadBannerScreen";
+
+  @override
+  State<UploadBannerScreen> createState() => _UploadBannerScreenState();
+}
+
+class _UploadBannerScreenState extends State<UploadBannerScreen> {
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      print("Error picking file: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -16,12 +38,12 @@ class UploadBannerScreen extends StatelessWidget {
             child: const Text(
               'Banners',
               style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700
+                fontSize: 36,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          Divider(color: Colors.grey,),
+          Divider(color: Colors.grey),
           Row(
             children: [
               Padding(
@@ -34,39 +56,45 @@ class UploadBannerScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.grey.shade500,
                         border: Border.all(
-                            color: Colors.grey.shade800),
+                          color: Colors.grey.shade800,
+                        ),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Center(
-                        child: Text('Banners'),
+                        child: _image != null
+                            ? Image.file(_image!) // عرض الصورة من ملف
+                            : Text('Banners'),
                       ),
                     ),
-                    SizedBox(height: 15,),
+                    SizedBox(height: 15),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo,
                       ),
-                      onPressed: (){},
-                      child: Text('Upload banner',
+                      onPressed: pickImage,
+                      child: Text(
+                        'Upload banner',
                         style: TextStyle(
-                        color: Colors.white,
-                      ),
-
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: 20,),
+              SizedBox(width: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo,
                 ),
-                onPressed: (){},
-                child: Text('Save',
+                onPressed: () {
+                  // إضافة منطق الحفظ هنا إذا لزم الأمر
+                },
+                child: Text(
+                  'Save',
                   style: TextStyle(
-                  color: Colors.white,
-                ),
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
