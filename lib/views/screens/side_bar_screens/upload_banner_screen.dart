@@ -1,16 +1,16 @@
-import 'dart:io';
+import 'dart:typed_data'; // لاستخدام Uint8List
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class UploadBannerScreen extends StatefulWidget {
-  static const String routeName = "\UploadBannerScreen";
+  static const String routeName = "/UploadBannerScreen";
 
   @override
   State<UploadBannerScreen> createState() => _UploadBannerScreenState();
 }
 
 class _UploadBannerScreenState extends State<UploadBannerScreen> {
-  File? _image;
+  Uint8List? _image; // تغيير نوع المتغير إلى Uint8List لتخزين بيانات الصورة
   final ImagePicker _picker = ImagePicker();
 
   Future<void> pickImage() async {
@@ -18,8 +18,10 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
       final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
       if (pickedFile != null) {
+        // قراءة الصورة كبيانات بايت
+        final imageBytes = await pickedFile.readAsBytes();
         setState(() {
-          _image = File(pickedFile.path);
+          _image = imageBytes;
         });
       }
     } catch (e) {
@@ -60,10 +62,13 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
                         ),
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: Center(
-                        child: _image != null
-                            ? Image.file(_image!) // عرض الصورة من ملف
-                            : Text('Banners'),
+                      child: _image != null
+                          ? Image.memory(
+                        _image!,
+                        fit: BoxFit.cover, // لتناسب الصورة مع الحاوية
+                      )
+                          : Center(
+                        child: Text('Banners'),
                       ),
                     ),
                     SizedBox(height: 15),
