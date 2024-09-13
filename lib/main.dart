@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
+
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -46,6 +48,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: MainScreen(),
+      builder: EasyLoading.init(),
     );
   }
 }

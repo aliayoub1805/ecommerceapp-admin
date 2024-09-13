@@ -2,6 +2,7 @@ import 'dart:typed_data'; // لاستخدام Uint8List
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:image_picker/image_picker.dart';
 
 class UploadBannerScreen extends StatefulWidget {
@@ -38,6 +39,7 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
 
   Future<String> _uploadBannersToStorage(Uint8List image) async {
     final ref = _storage.ref().child('Banners').child(_fileName!);
+
     final uploadTask = ref.putData(image);
     final snapshot = await uploadTask;
     final downloadUrl = await snapshot.ref.getDownloadURL();
@@ -45,6 +47,8 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
   }
 
   Future<void> uploadToFireStore() async {
+
+    EasyLoading.show(status: 'Uploading...');
     if (_image != null) {
       setState(() {
         _isUploading = true; // بدء التحميل
@@ -54,12 +58,14 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
         final imageUrl = await _uploadBannersToStorage(_image!);
         await _firestore.collection('banners').doc(_fileName).set({
           'image': imageUrl,
+        }).whenComplete(() {
+          EasyLoading.dismiss(); // إيقاف شريط التقدم
         });
 
         // عرض رسالة النجاح
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Uploading to server'),
+            content: Text('تم رفع الصورة بنجاح'),
             backgroundColor: Colors.green,
           ),
         );
@@ -74,7 +80,7 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
         print("Error uploading to Firestore: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error uploading'),
+            content: Text('فشل في رفع الصورة'),
             backgroundColor: Colors.red,
           ),
         );
@@ -82,15 +88,16 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
         setState(() {
           _isUploading = false; // إيقاف التحميل
         });
+        EasyLoading.dismiss(); // إيقاف شريط التقدم في حالة الخطأ
       }
-    }
-    else{
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Empty path'),
+          content: Text('مسار الصورة فارغ'),
           backgroundColor: Colors.red,
         ),
       );
+      EasyLoading.dismiss(); // إيقاف شريط التقدم في حالة المسار الفارغ
     }
   }
 
@@ -177,11 +184,6 @@ class _UploadBannerScreenState extends State<UploadBannerScreen> {
                       ),
                     ),
                   ),
-                  if (_isUploading) // عرض شريط التقدم عند التحميل
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: CircularProgressIndicator(),
-                    ),
                 ],
               ),
             ],
